@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Usage: ./parseSystemFilesTocsvList.sh /folder/target -s
+# Usage: ./parseSystemFilesTocsvList.sh /folder/target -option
 usage() {
-	echo "Usage: $0 [absolute path to folder (/folder/target)] [option: -n (nested) or -s (simple) (default -n)]"
+	echo "Usage: $0 [absolute path to folder (/folder/target)] [option: -n (nested) , -s (simple) or -p (Path). (default -n)]"
 	exit 1
 }
 
@@ -21,6 +21,9 @@ case $i in
 		;;
 		-n*)
 			LIST_FORMAT="nested"
+		;;
+		-p*)
+			LIST_FORMAT="nested_with_path"
 		;;
 		*)
       # unknown option
@@ -69,6 +72,22 @@ file_list_nested_format() {
 	done < <(find "$first_folder" -mindepth 1 -maxdepth 1 -type f \( -name "*.xml" -o -name "*.html" -o -name "*.js" \) | sort)
 }
 
+file_list_nested_format_with_path() {
+	local first_folder="$1"
+	local nested_param="${2:-;}"
+
+	# Proccess files in current level
+	while IFS= read -r file; do
+			list_csv_nested_formatting "$file" ";$nested_param"
+	done < <(find "$first_folder" -mindepth 1 -maxdepth 1 -type f \( -name "*.xml" -o -name "*.html" -o -name "*.js" \) | sort)
+
+	# Proccess folders in current level
+	while IFS= read -r folder; do
+			echo ";${folder//$initial_folder/}"
+			file_list_nested_format_with_path "$folder" "$nested_param"
+	done < <(find "$first_folder" -mindepth 1 -maxdepth 1 -type d | sort)
+}
+
 list_csv_nested_formatting() {
 	file_path="$1"
 	nested_info="$2"
@@ -107,6 +126,8 @@ fi
 
 if [ "$LIST_FORMAT" == "simple" ]; then
 	file_list_simple_formatting "$initial_folder"
+elif [ "$LIST_FORMAT" == "nested_with_path" ]; then
+	file_list_nested_format_with_path "$initial_folder"
 else
 	file_list_nested_format "$initial_folder"
 fi
