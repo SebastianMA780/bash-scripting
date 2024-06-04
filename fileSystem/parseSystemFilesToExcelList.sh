@@ -59,6 +59,7 @@ file_list_nested_format() {
 
 	# Proccess folders in current level
 	while IFS= read -r folder; do
+			echo "$nested_param${folder##*/}"
 			file_list_nested_format "$folder" "$nested_param;"
 	done < <(find "$first_folder" -mindepth 1 -maxdepth 1 -type d | sort)
 
