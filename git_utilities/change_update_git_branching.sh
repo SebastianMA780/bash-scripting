@@ -2,6 +2,14 @@
 
 # This script is used to change the branch and update it of the git repository
 
+#Colors
+GREEN="\033[32m"
+YELLOW="\033[33m"
+BLUE="\033[34m"
+DARK_BLUE="\033[38;5;21m"
+DARK_ORANGE="\033[38;5;208m"
+RESET="\033[0m"
+
 #Usage: 
 usage() {
 	echo "Usage: $0 [Absolute path of the directory] [option: -l(list) -u(update branch]. default is list"
@@ -28,6 +36,9 @@ case $i in
 		-u*)
 			OPTION="update"
 		;;
+		-b*)
+			OPTION="change"
+		;;
 		*)
 			usage;
 		;;
@@ -38,25 +49,51 @@ done
 list_folder_branch_info() {
 	for folder in "$DIRECTORY"/*; do
 			if [ -d "$folder" ]; then
-				echo "processing folder: $folder -------------"
-				(cd "$folder" && git status)
-				echo "-------------------"
+				echo -e "processing folder: ${BLUE}$(basename "$folder")${RESET}"
+				git_status=$(cd "$folder" && git status)
+				branch_line=$(echo "$git_status" | grep "On branch")
+				echo -e "${GREEN}${branch_line}${RESET}"
+				echo -e "$git_status" | tail -n +2
+				echo -e "${DARK_ORANGE}-------------------${RESET} \n\n"
 			fi
 	done
 }
 
-update_folder_branch() {
+change_folder_branch() {
 	for folder in "$DIRECTORY"/*; do
 		if [ -d "$folder" ]; then
-			echo "processing folder: $folder"
-			(cd "$folder" && git checkout master && git pull origin master)
-			echo "Process finished"
+			echo -e "processing folder: ${GREEN}$(basename "$folder")${RESET}"
+			(cd "$folder" && git checkout master)
+			echo -e "-- Process finished -- \n\n"
 		fi
 	done
 }
 
-#feature/spring-upgrade
-#feature/spring-upgrade
+update_folder_branch() {
+	add_ssh_key
+	for folder in "$DIRECTORY"/*; do
+		if [ -d "$folder" ]; then
+			echo -e "processing folder: ${GREEN}$(basename "$folder")${RESET}"
+			git_status=$(cd "$folder" && git status)
+			branch_line=$(echo "$git_status" | grep "On branch")
+			echo -e "${GREEN}${branch_line}${RESET}"
+			(cd "$folder" && git pull)
+			echo -e "-- Process finished -- \n\n"
+		fi
+	done
+}
+
+# ADDS ssh agent for key password
+add_ssh_key() {
+	if ! pgrep -u "$USER" ssh-agent > /dev/null; then
+    echo "Starting SSH agent..."
+    eval $(ssh-agent -s)
+	else
+    echo "SSH agent is already running."
+	fi
+	echo -e "ssh-add add path"
+	ssh-add /Users/sebastian/.ssh/id_rsa
+}
 
 #check if the folder exists
 if [ ! -d "$DIRECTORY" ]; then
@@ -68,12 +105,13 @@ if [ "$OPTION" == "list" ]; then
 	list_folder_branch_info
 elif [ "$OPTION" == "update" ]; then
 	update_folder_branch
+elif [ "$OPTION" == "change" ]; then
+	change_folder_branch
+else
+	usage
 fi
 
 
 # PENDING TO RESOLVE SHIFT ISSUE for ARGUMENTS AND OPTIONS
-# PENDING ADD COLORS
-# PENDING MAKE FETCH OPTIONAL
-# ADDS ssh agent for key password
-# eval $(ssh-agent -s)
-# ssh-add /path/to/your/private/key
+# MAKE CHANGE BRANCH THE POSSIBILITY TO CHANGE TO A SPECIFIC BRANCH
+#MAKE add_ssh_key the POSSIBILITY to add the key path as an argument
