@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# This script is used to change the branch and update it of the git repository
-
 #Colors
 GREEN="\033[32m"
 YELLOW="\033[33m"
@@ -12,8 +10,26 @@ RESET="\033[0m"
 
 #Usage: 
 usage() {
-	echo "Usage: $0 [Absolute path of the directory] [option: -l(list) -u(update branch]. default is list"
-	exit 1	
+    echo -e "${YELLOW}Description:${RESET}"
+    echo -e "  This script manages git repositories in a directory, allowing you to list, update, or change branches.\n"
+    
+    echo -e "${YELLOW}Usage:${RESET}"
+    echo -e "  $0 <directory_path> [option]\n"
+    
+    echo -e "${YELLOW}Arguments:${RESET}"
+    echo -e "  directory_path    ${BLUE}Absolute path to the directory containing git repositories${RESET}\n"
+    
+    echo -e "${YELLOW}Options:${RESET}"
+    echo -e "  -l    ${BLUE}List current branch and status of all repositories (default)${RESET}"
+    echo -e "  -u    ${BLUE}Update (pull) all repositories in their current branch${RESET}"
+    echo -e "  -b    ${BLUE}Change branch to master for all repositories${RESET}\n"
+    
+    echo -e "${YELLOW}Examples:${RESET}"
+    echo -e "  $0 /path/to/repos -l    ${DARK_BLUE}# List all repositories status${RESET}"
+    echo -e "  $0 /path/to/repos -u    ${DARK_BLUE}# Update all repositories${RESET}"
+    echo -e "  $0 /path/to/repos -b    ${DARK_BLUE}# Change all repositories to master branch${RESET}\n"
+    
+    exit 1
 }
 
 if [ "$#" -lt 1 ]; then
@@ -44,7 +60,6 @@ case $i in
 		;;
 esac
 done
-
 
 list_folder_branch_info() {
 	for folder in "$DIRECTORY"/*; do
@@ -111,7 +126,5 @@ else
 	usage
 fi
 
-
-# PENDING TO RESOLVE SHIFT ISSUE for ARGUMENTS AND OPTIONS
-# MAKE CHANGE BRANCH THE POSSIBILITY TO CHANGE TO A SPECIFIC BRANCH
-#MAKE add_ssh_key the POSSIBILITY to add the key path as an argument
+# MAKE CHANGE BRANCH THE POSSIBILITY TO CHANGE TO A SPECIFIC BRANCH (NOT ONLY MASTER)
+# MAKE add_ssh_key the POSSIBILITY to add the key path as an argument
