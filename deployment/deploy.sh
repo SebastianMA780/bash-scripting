@@ -154,12 +154,13 @@ use_node_version() {
 install_node_version() {
 	# Node 14 is required for the project
 
-	if nvm --version; then
+	if [ -d "$HOME/.nvm" ]; then
 		echo -e "${GREEN}NVM is already installed.${NC}"
 	else
 		install_nvm
-		load_nvm
 	fi
+
+	load_nvm
 
 	if nvm ls 14 | grep "v14."; then
 		echo -e "${GREEN}Node.js 14 is already installed.${NC}"
