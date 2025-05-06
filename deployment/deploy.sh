@@ -7,6 +7,16 @@ BLUE="\033[34m"
 
 project_folder_path="$1"
 
+usage() {
+	echo -e "Usage: $0 [absolute path to folder (/folder/target)]"
+	exit 1
+}
+
+if [ "$#" -lt 1 ]; then
+	usage;
+	exit 1
+fi
+
 set_vue_material_new_version() {
 	PACKAGE_JSON_PATH="$project_folder_path/front-end/package.json"
 	OLD_DEPENDENCY='"vue-material": "\^1\.0\.0-beta-7"'
@@ -15,7 +25,7 @@ set_vue_material_new_version() {
 	sed -i "s/$OLD_DEPENDENCY/$NEW_DEPENDENCY/g" "$PACKAGE_JSON_PATH"
 
 	if [ $? -eq 0 ]; then
-		echo -e "${GREEN}Updated vue-material version in $PACKAGE_JSON_PATH${NC}"
+		echo -e "${GREEN} Updated vue-material version in $PACKAGE_JSON_PATH${NC}"
 	else
 		echo -e "${YELLOW}Failed to update vue-material version in $PACKAGE_JSON_PATH${NC}"
 	fi
@@ -80,13 +90,13 @@ configure_shell() {
 install_pyenv_python() {
 	echo -e "${YELLOW}4. Installing Python 2.7.18...${NC}"
 
-	if pyenv versions | grep -q "2.7.18"; then
-		echo "${GREEN}Python 2.7.18 is already installed.${NC}"
+	if pyenv versions | grep "2.7.18"; then
+		echo -e "${GREEN}Python 2.7.18 is already installed.${NC}"
 	else
     if pyenv install 2.7.18; then
-        echo "${GREEN}Python 2.7.18 installed successfully.${NC}"
+        echo -e "${GREEN}Python 2.7.18 installed successfully.${NC}"
     else
-				echo "${YELLOW}Failed to install Python 2.7.18.${NC}"
+				echo -e "${YELLOW}Failed to install Python 2.7.18.${NC}"
         exit 1
     fi
 	fi
@@ -98,14 +108,66 @@ select_local_python_version() {
 	cd "$project_folder_path"
 
 	if pyenv local 2.7.18; then
-		echo "${GREEN}Python 2.7.18 set as local version.${NC}"
+		echo echo -e "${GREEN}Python 2.7.18 set as local version.${NC}"
 	else
-		echo "${YELLOW}Failed to set Python 2.7.18 as local version.${NC}"
+		echo echo -e "${YELLOW}Failed to set Python 2.7.18 as local version.${NC}"
 		exit 1
 	fi
 }
 
+install_nvm() {
+	echo -e "${YELLOW}Installing NVM...${NC}"
+
+	if [ -d "$HOME/.nvm" ]; then
+		echo -e "${GREEN}NVM is already installed.${NC}"
+	else
+    if curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash; then
+				echo -e "${GREEN}NVM installed successfully.${NC}"
+    else
+				echo -e "${YELLOW}Failed to install NVM.${NC}"
+				exit 1
+    fi
+	fi
+}
+
+load_nvm() {
+	echo -e "${YELLOW}Loading NVM...${NC}"
+
+	source ~/.nvm/nvm.sh
+}
+
+install_node_14() {
+	echo -e "${YELLOW}Installing Node.js 14...${NC}"
+
+	if nvm ls 14 | grep -q "v14."; then
+	 		echo -e "${GREEN}Node.js 14 is already installed.${NC}"
+	else
+			if nvm install 14; then
+					echo -e "${GREEN}Node.js 14 installed successfully.${NC}"
+			else
+					echo -e "${YELLOW}Failed to install Node.js 14.${NC}"
+					exit 1
+			fi
+	fi
+}
+
+use_node_14() {
+	nvm use 14
+	echo -e "${GREEN} using $(node -v)${NC}"
+}
+
+install_node_version() {
+	# Node 14 is required for the project
+
+	install_nvm
+	load_nvm
+	install_node_14
+	use_node_14
+}
+
 install_python_version() {
+	# Python 2.7.18 is required for the project
+
 	install_dependencies
 	clone_pyenv
 	configure_shell
@@ -137,6 +199,32 @@ npm_run_build() {
 	fi
 }
 
+set_routes_to_index_html() {
+	echo -e "${YELLOW}Setting routes to index.html...${NC}"
+
+	cd "$project_folder_path/front-end/dist"
+	HTML_FILE="index.html"
+
+	sed -i 's/<script type=text\/javascript src=/<script type=text\/javascript src=./g' "$HTML_FILE";
+	sed -i 's/<link href=/<link href=./g' "$HTML_FILE";
+
+	if [ $? -eq 0 ]; then
+		echo -e "${GREEN}Routes set to index.html successfully.${NC}"
+	else
+		echo -e "${YELLOW}Failed to set routes to index.html.${NC}"
+		exit 1
+	fi
+}
+
+move_frontend_to_backend() {
+	echo -e "${YELLOW}Moving frontend to backend...${NC}"
+
+	rm -rf "$project_folder_path/src/main/webapp/static"
+	rm "$project_folder_path/src/main/webapp/index.html"
+
+	mv "$project_folder_path/front-end/dist/index.html" "$project_folder_path/src/main/webapp"
+	mv "$project_folder_path/front-end/dist/static" "$project_folder_path/src/main/webapp"
+}
 
 # Check if the folder exists
 if [ ! -d "$project_folder_path" ]; then
@@ -145,6 +233,9 @@ if [ ! -d "$project_folder_path" ]; then
 fi
 
 set_vue_material_new_version
+install_node_version
 install_python_version
 npm_install
 npm_run_build
+set_routes_to_index_html
+move_frontend_to_backend
