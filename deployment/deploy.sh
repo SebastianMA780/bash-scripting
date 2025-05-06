@@ -6,6 +6,7 @@ YELLOW="\033[33m"
 BLUE="\033[34m"
 
 project_folder_path="$1"
+project_deploy_url="${2:-http://localhost:8080/citizen}"
 
 usage() {
 	echo -e "Usage: $0 [absolute path to folder (/folder/target)]"
@@ -29,6 +30,13 @@ set_vue_material_new_version() {
 	else
 		echo -e "${YELLOW}Failed to update vue-material version in $PACKAGE_JSON_PATH${NC}"
 	fi
+}
+
+set_server_url() {
+	echo -e "${YELLOW}Setting server URL...${NC}"
+	
+	CONFIG_FILE="$project_folder_path/front-end/src/main.js"
+	sed -i "s|export const backEndUrl = .*|export const backEndUrl = '$project_deploy_url';|" "$CONFIG_FILE"
 }
 
 install_dependencies() {
@@ -233,6 +241,7 @@ if [ ! -d "$project_folder_path" ]; then
 fi
 
 set_vue_material_new_version
+set_server_url
 install_node_version
 install_python_version
 npm_install
