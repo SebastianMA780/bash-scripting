@@ -5,11 +5,11 @@ GREEN="\033[32m"
 YELLOW="\033[33m"
 BLUE="\033[34m"
 
-project_folder_path="$1"
-project_deploy_url="${2:-http://localhost:8080/citizen}"
+PROJECT_FOLDER_PATH="$1"
+DEPLOYMENT_URL="${2:-http://localhost:8080/citizen}"
 
 usage() {
-	echo -e "Usage: $0 [absolute path to folder (/folder/target)]"
+	echo -e "${YELLOW}Usage: $0 [<PROJECT_FOLDER_PATH>] [<DEPLOYMENT_URL>]${NC}"
 	exit 1
 }
 
@@ -19,7 +19,7 @@ if [ "$#" -lt 1 ]; then
 fi
 
 set_vue_material_new_version() {
-	PACKAGE_JSON_PATH="$project_folder_path/front-end/package.json"
+	PACKAGE_JSON_PATH="$FRONTED_PATH/package.json"
 	OLD_DEPENDENCY='"vue-material": "\^1\.0\.0-beta-7"'
 	NEW_DEPENDENCY='"vue-material": "^1.0.0-beta-11"'
 
@@ -34,13 +34,13 @@ set_vue_material_new_version() {
 
 set_server_url() {
 	echo -e "${YELLOW}Setting server URL...${NC}"
-	
-	CONFIG_FILE="$project_folder_path/front-end/src/main.js"
-	sed -i "s|export const backEndUrl = .*|export const backEndUrl = '$project_deploy_url';|" "$CONFIG_FILE"
+
+	CONFIG_FILE="$FRONTED_PATH/src/main.js"
+	sed -i "s|export const backEndUrl = .*|export const backEndUrl = '$DEPLOYMENT_URL'|" "$CONFIG_FILE"
 }
 
 install_dependencies() {
-	echo -e "${YELLOW}1. Installing compilation dependencies...${NC}"
+	echo -e "${YELLOW}Installing compilation dependencies for pyenv...${NC}"
 
 	sudo apt update
 	if sudo apt install -y make build-essential libssl-dev zlib1g-dev \
@@ -55,7 +55,7 @@ install_dependencies() {
 }
 
 clone_pyenv() {
-	echo -e "${YELLOW}2. Cloning pyenv...${NC}"
+	echo -e "${YELLOW}Cloning pyenv...${NC}"
 
 	if [ -d "$HOME/.pyenv" ]; then
     echo "Directory $HOME/.pyenv already exists. Skipping clone."
@@ -70,7 +70,7 @@ clone_pyenv() {
 }
 
 configure_shell() {
-	echo -e "${YELLOW}3. Configuring shell...${NC}"
+	echo -e "${YELLOW}Configuring shell for pyenv...${NC}"
 
 	if ! grep -q "PYENV_ROOT=\"\$HOME/.pyenv\"" ~/.bashrc; then
     echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
@@ -87,7 +87,7 @@ configure_shell() {
 		echo -e "${GREEN}pyenv init set in ~/.bashrc${NC}"
 	fi
 
-	export PYENV_ROOT="$HOME/.pyenv"c
+	export PYENV_ROOT="$HOME/.pyenv"
 	export PATH="$PYENV_ROOT/bin:$PATH"
 	if command -v pyenv >/dev/null 2>&1; then
 			eval "$(pyenv init -)"
@@ -96,7 +96,7 @@ configure_shell() {
 }
 
 install_pyenv_python() {
-	echo -e "${YELLOW}4. Installing Python 2.7.18...${NC}"
+	echo -e "${YELLOW}Installing Python 2.7.18...${NC}"
 
 	if pyenv versions | grep "2.7.18"; then
 		echo -e "${GREEN}Python 2.7.18 is already installed.${NC}"
@@ -111,9 +111,9 @@ install_pyenv_python() {
 }
 
 select_local_python_version() {
-	echo -e "${YELLOW}5. Setting Python 2.7.18 as local version...${NC}"
+	echo -e "${YELLOW}Setting Python 2.7.18 as local version...${NC}"
 
-	cd "$project_folder_path"
+	cd "$PROJECT_FOLDER_PATH"
 
 	if pyenv local 2.7.18; then
 		echo echo -e "${GREEN}Python 2.7.18 set as local version.${NC}"
@@ -161,7 +161,6 @@ install_node_14() {
 
 use_node_14() {
 	nvm use 14
-	echo -e "${GREEN} using $(node -v)${NC}"
 }
 
 install_node_version() {
@@ -186,7 +185,7 @@ install_python_version() {
 npm_install() {
 	echo -e "${YELLOW}6. Installing npm dependencies...${NC}"
 
-	cd "$project_folder_path/front-end"
+	cd "$FRONTED_PATH"
 	if npm install; then
 		echo -e "${GREEN}npm dependencies installed successfully.${NC}"
 	else
@@ -198,7 +197,7 @@ npm_install() {
 npm_run_build() {
 	echo -e "${YELLOW}7. Building the project...${NC}"
 
-	cd "$project_folder_path/front-end"
+	cd "$FRONTED_PATH"
 	if npm run build; then
 		echo -e "${GREEN}Project built successfully.${NC}"
 	else
@@ -210,7 +209,7 @@ npm_run_build() {
 set_routes_to_index_html() {
 	echo -e "${YELLOW}Setting routes to index.html...${NC}"
 
-	cd "$project_folder_path/front-end/dist"
+	cd "$FRONTED_PATH/dist"
 	HTML_FILE="index.html"
 
 	sed -i 's/<script type=text\/javascript src=/<script type=text\/javascript src=./g' "$HTML_FILE";
@@ -227,18 +226,20 @@ set_routes_to_index_html() {
 move_frontend_to_backend() {
 	echo -e "${YELLOW}Moving frontend to backend...${NC}"
 
-	rm -rf "$project_folder_path/src/main/webapp/static"
-	rm "$project_folder_path/src/main/webapp/index.html"
+	rm -rf "$PROJECT_FOLDER_PATH/src/main/webapp/static"
+	rm "$PROJECT_FOLDER_PATH/src/main/webapp/index.html"
 
-	mv "$project_folder_path/front-end/dist/index.html" "$project_folder_path/src/main/webapp"
-	mv "$project_folder_path/front-end/dist/static" "$project_folder_path/src/main/webapp"
+	mv "$FRONTED_PATH/dist/index.html" "$PROJECT_FOLDER_PATH/src/main/webapp"
+	mv "$FRONTED_PATH/dist/static" "$PROJECT_FOLDER_PATH/src/main/webapp"
 }
 
 # Check if the folder exists
-if [ ! -d "$project_folder_path" ]; then
-	echo "Folder $project_folder_path does not exist"
+if [ ! -d "$PROJECT_FOLDER_PATH" ]; then
+	echo "Folder $PROJECT_FOLDER_PATH does not exist"
 	exit 1
 fi
+
+FRONTED_PATH="$PROJECT_FOLDER_PATH/front-end"
 
 set_vue_material_new_version
 set_server_url
