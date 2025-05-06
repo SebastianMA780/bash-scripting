@@ -95,18 +95,14 @@ configure_shell() {
 	source ~/.bashrc
 }
 
-install_pyenv_python() {
+install_python_version() {
 	echo -e "${YELLOW}Installing Python 2.7.18...${NC}"
 
-	if pyenv versions | grep "2.7.18"; then
-		echo -e "${GREEN}Python 2.7.18 is already installed.${NC}"
-	else
-    if pyenv install 2.7.18; then
+	if pyenv install 2.7.18; then
         echo -e "${GREEN}Python 2.7.18 installed successfully.${NC}"
-    else
-				echo -e "${YELLOW}Failed to install Python 2.7.18.${NC}"
-        exit 1
-    fi
+	else
+		echo -e "${YELLOW}Failed to install Python 2.7.18.${NC}"
+		exit 1
 	fi
 }
 
@@ -116,25 +112,21 @@ select_local_python_version() {
 	cd "$PROJECT_FOLDER_PATH"
 
 	if pyenv local 2.7.18; then
-		echo echo -e "${GREEN}Python 2.7.18 set as local version.${NC}"
+		echo -e "${GREEN}Python 2.7.18 set as local version.${NC}"
 	else
-		echo echo -e "${YELLOW}Failed to set Python 2.7.18 as local version.${NC}"
+		echo -e "${YELLOW}Failed to set Python 2.7.18 as local version.${NC}"
 		exit 1
 	fi
 }
 
 install_nvm() {
-	echo -e "${YELLOW}Installing NVM...${NC}"
+	echo -e "${YELLOW} Installing NVM...${NC}"
 
-	if [ -d "$HOME/.nvm" ]; then
-		echo -e "${GREEN}NVM is already installed.${NC}"
+	if curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash; then
+		echo -e "${GREEN}NVM installed successfully.${NC}"
 	else
-    if curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash; then
-				echo -e "${GREEN}NVM installed successfully.${NC}"
-    else
-				echo -e "${YELLOW}Failed to install NVM.${NC}"
-				exit 1
-    fi
+		echo -e "${YELLOW}Failed to install NVM.${NC}"
+		exit 1
 	fi
 }
 
@@ -147,43 +139,63 @@ load_nvm() {
 install_node_14() {
 	echo -e "${YELLOW}Installing Node.js 14...${NC}"
 
-	if nvm ls 14 | grep -q "v14."; then
-	 		echo -e "${GREEN}Node.js 14 is already installed.${NC}"
+	if nvm install 14; then
+		echo -e "${GREEN}Node.js 14 installed successfully.${NC}"
 	else
-			if nvm install 14; then
-					echo -e "${GREEN}Node.js 14 installed successfully.${NC}"
-			else
-					echo -e "${YELLOW}Failed to install Node.js 14.${NC}"
-					exit 1
-			fi
+		echo -e "${YELLOW}Failed to install Node.js 14.${NC}"
+		exit 1
 	fi
 }
 
-use_node_14() {
+use_node_version() {
 	nvm use 14
 }
 
 install_node_version() {
 	# Node 14 is required for the project
 
-	install_nvm
-	load_nvm
-	install_node_14
-	use_node_14
+	if nvm --version; then
+		echo -e "${GREEN}NVM is already installed.${NC}"
+	else
+		install_nvm
+		load_nvm
+	fi
+
+	if nvm ls 14 | grep "v14."; then
+		echo -e "${GREEN}Node.js 14 is already installed.${NC}"
+	else
+		install_node_14
+	fi
+
+	if node -v | grep "v14."; then
+		echo -e "${GREEN}Node.js 14 is already in use.${NC}"
+	else
+		use_node_version
+	fi
 }
 
-install_python_version() {
+install_python_version_with_pyenv() {
 	# Python 2.7.18 is required for the project
 
-	install_dependencies
-	clone_pyenv
-	configure_shell
-	install_pyenv_python
-	select_local_python_version
+	if pyenv versions | grep "2.7"; then
+		echo -e "${GREEN}Python 2.7 is already installed.${NC}"
+	else
+		install_dependencies
+		clone_pyenv
+		configure_shell
+		install_python_version
+	fi
+
+	cd "$PROJECT_FOLDER_PATH"
+	if pyenv version | grep "2.7"; then
+		echo -e "${GREEN}Local Python version is already 2.7.${NC}"
+	else
+		select_local_python_version
+	fi
 }
 
 npm_install() {
-	echo -e "${YELLOW}6. Installing npm dependencies...${NC}"
+	echo -e "${YELLOW}Installing npm dependencies...${NC}"
 
 	cd "$FRONTED_PATH"
 	if npm install; then
@@ -195,7 +207,7 @@ npm_install() {
 }
 
 npm_run_build() {
-	echo -e "${YELLOW}7. Building the project...${NC}"
+	echo -e "${YELLOW}Building the project...${NC}"
 
 	cd "$FRONTED_PATH"
 	if npm run build; then
@@ -244,7 +256,7 @@ FRONTED_PATH="$PROJECT_FOLDER_PATH/front-end"
 set_vue_material_new_version
 set_server_url
 install_node_version
-install_python_version
+install_python_version_with_pyenv
 npm_install
 npm_run_build
 set_routes_to_index_html
