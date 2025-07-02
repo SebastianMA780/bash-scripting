@@ -29,6 +29,12 @@ for zip_file in "$DOWNLOADS_DIR"/*.zip; do
             echo "Extracting: $filename"
             base_name=$(basename "$filename" .zip)
             extract_dir="$DEST_DIR/$base_name"
+            
+            if [ -d "$extract_dir" ]; then
+                echo "Directory $base_name already exists, removing old version..."
+                rm -rf "$extract_dir"
+            fi
+            
             mkdir -p "$extract_dir"
             unzip -q "$DEST_DIR/$filename" -d "$extract_dir/"
             
