@@ -26,8 +26,20 @@ for zip_file in "$DOWNLOADS_DIR"/*.zip; do
             echo "Successfully moved: $filename"
             ((zip_count++))
             
-            echo "Extracting info from: $filename"
-            unzip -l "$DEST_DIR/$filename" | head -20
+            echo "Extracting: $filename"
+            base_name=$(basename "$filename" .zip)
+            extract_dir="$DEST_DIR/$base_name"
+            mkdir -p "$extract_dir"
+            unzip -q "$DEST_DIR/$filename" -d "$extract_dir/"
+            
+            if [ $? -eq 0 ]; then
+                echo "Successfully extracted: $filename to $extract_dir"
+                echo "Deleting zip file: $filename"
+                rm "$DEST_DIR/$filename"
+                echo "Deleted: $filename"
+            else
+                echo "Failed to extract: $filename"
+            fi
             echo "---"
         else
             echo "Failed to move: $filename"
