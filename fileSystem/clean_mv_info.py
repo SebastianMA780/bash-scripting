@@ -12,7 +12,7 @@ Note:
 """
 
 import os
-from re import A
+import re
 import sys
 import shutil
 from datetime import datetime, timedelta
@@ -76,9 +76,9 @@ def rm_zip_files(temp_dir):
 			os.remove(source_path)
 
 	print(f"Removed {len(os.listdir(temp_dir))} file(s).")	
-	clean_files(temp_dir)
+	clean_txt_files(temp_dir)
 
-def clean_files(temp_dir):
+def clean_txt_files(temp_dir):
 	"""
 	deletes lines in .txt files in each folder older than 2 months of the current month, date format [7/3/25, 5:46:42 PM]
 	"""
@@ -99,7 +99,7 @@ def clean_files(temp_dir):
 		except Exception as e:
 			print(f"Error cleaning {txt_path.name}: {e}")
 			if temp_file.exists():
-				temp_file.unlink()  # Remove temp file on error
+				temp_file.unlink()
 
 
 def is_date_more_than_time_ago(date_str):
@@ -108,12 +108,10 @@ def is_date_more_than_time_ago(date_str):
 	return datetime.strptime(date_str, "%m/%d/%y") < ONE_MONTH_AGO
 
 def get_date_from_msg(msg):
-	# Strip invisible Unicode characters and whitespace
-	cleaned_msg = msg.strip().lstrip('\u200e\u200f\u202a\u202b\u202c\u202d\u202e')
-	if not cleaned_msg.startswith('[') or ']' not in cleaned_msg:
-		return None
-	date_str = cleaned_msg.split(',', 1)[0][1:]
-	return date_str
+	match = re.search(r'\[(\d{1,2}/\d{1,2}/\d{2,4})', msg)
+	if match:
+		return match.group(1)
+	return None
 
 # main
 if __name__ == "__main__":
