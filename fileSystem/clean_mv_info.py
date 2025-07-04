@@ -29,15 +29,12 @@ DAYS_AGO = 45
 TIME_AGO = datetime.now() - timedelta(days=DAYS_AGO)
 RE_DATE_MSG = r'\[(\d{1,2}/\d{1,2}/\d{2,4})'
 RE_DATE_FILE_NAME = r'(\d{4}-\d{2}-\d{2})'
+DEFAULT_ZIP_DIR = "/Users/sebastian/Downloads"
 
-def gather_zip_files_temp(zip_dir):
+def gather_zip_files_temp(zip_dir, temp_dir):
     """
     Moves all .zip files containing keywords from a source directory to a temporary folder inside the source directory.
     """
-    temp_dir = os.path.join(zip_dir, TEMP_FOLDER_NAME)
-    print(f"Creating temporary folder at: {temp_dir}")
-    os.makedirs(temp_dir, exist_ok=True)
-    
     files_to_move = [
 			f for f in os.listdir(zip_dir) 
 			if f.endswith(".zip") and any(keyword in f for keyword in CHAT_FILES_KEYWORDS)
@@ -54,7 +51,6 @@ def gather_zip_files_temp(zip_dir):
         shutil.move(source_path, dest_path)
 
     print(f"Moved {len(files_to_move)} zip file(s).") 
-    extract_zip_files(temp_dir)
 
 def extract_zip_files(temp_dir):
     """
@@ -67,7 +63,6 @@ def extract_zip_files(temp_dir):
             shutil.unpack_archive(source_path, extract_dir)
 
     print(f"Extracted zip files.")	
-    rm_zip_files(temp_dir)
 
 def rm_zip_files(temp_dir):
 	"""
@@ -79,8 +74,6 @@ def rm_zip_files(temp_dir):
 			os.remove(source_path)
 
 	print(f"Removed zip files.")	
-	clean_txt_files(temp_dir)
-	delete_old_files(temp_dir)
 
 def clean_txt_files(temp_dir):
 	"""
@@ -130,22 +123,38 @@ def get_date_from_string(str_info, regex):
 		return match.group(1)
 	return None
 
+def create_temp_dir(zip_dir):
+	temp_dir = os.path.join(zip_dir, TEMP_FOLDER_NAME)
+	print(f"Creating temporary folder at: {temp_dir}")
+	os.makedirs(temp_dir, exist_ok=True)
+	return temp_dir
+
+def execute_process(zip_dir):
+	temp_dir = create_temp_dir(zip_dir)
+	gather_zip_files_temp(zip_dir, temp_dir)
+	extract_zip_files(temp_dir)	
+	rm_zip_files(temp_dir)
+	clean_txt_files(temp_dir)
+	delete_old_files(temp_dir)
+
+
 # main
 if __name__ == "__main__":
 	if len(sys.argv) > 1:
 			zip_dir = sys.argv[1]
 	else:
-			zip_dir = "/Users/sebastian/Downloads"
+			zip_dir = DEFAULT_ZIP_DIR
 	
 	if not os.path.isdir(zip_dir):
 			print(f"Error: Directory not found at {zip_dir}")
 			sys.exit(1)
 
-	gather_zip_files_temp(zip_dir)
+	execute_process(zip_dir)
 
 
 """
  PENDING IMPROVEMENTS
  - Add cases to delete messages, for example when messages are more than 2 rows the last one is not deleted
  because it does not have the date.
+ - Implement parallel processing to speed up the process. is there optimization to be done?
 """
