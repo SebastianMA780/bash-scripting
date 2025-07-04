@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 
 """
-1. gather all files .zip from a given directory in a temp folder
-2. extract all files from the .zip files
-3. clean the files text
-4. move the files to the destination directory
-5. remove the temp folder
-
 Note: 
 - this file needs execution permissions (chmod u+x clean_mv_info.py)
+
+Description:
+1. gather all files .zip from a given directory in a temp folder.
+2. extract all files from the .zip files.
+3. clean the files text removing lines older than DAYS_AGO.
+4. remove files older than DAYS_AGO.
+5. move the folders with the clean files to the destination directory.
+6. remove the temp folder.
+
+Usage:
+python clean_mv_info.py [/path/to/zip/files]
 """
 
 import os
@@ -20,7 +25,10 @@ from pathlib import Path
 
 CHAT_FILES_KEYWORDS = ["WhatsApp", "Chat"]
 TEMP_FOLDER_NAME = "temp_folder"
-ONE_MONTH_AGO = datetime.now() - timedelta(days=30)
+DAYS_AGO = 45
+TIME_AGO = datetime.now() - timedelta(days=DAYS_AGO)
+RE_DATE_MSG = r'\[(\d{1,2}/\d{1,2}/\d{2,4})'
+RE_DATE_FILE_NAME = r'(\d{4}-\d{2}-\d{2})'
 
 def gather_zip_files_temp(zip_dir):
     """
@@ -29,8 +37,6 @@ def gather_zip_files_temp(zip_dir):
     temp_dir = os.path.join(zip_dir, TEMP_FOLDER_NAME)
     print(f"Creating temporary folder at: {temp_dir}")
     os.makedirs(temp_dir, exist_ok=True)
-    
-    print(f"Scanning {zip_dir} for zip files with keywords: {CHAT_FILES_KEYWORDS}")
     
     files_to_move = [
 			f for f in os.listdir(zip_dir) 
@@ -45,10 +51,9 @@ def gather_zip_files_temp(zip_dir):
     for filename in files_to_move:
         source_path = os.path.join(zip_dir, filename)
         dest_path = os.path.join(temp_dir, filename)
-        print(f"Moving {filename} to {temp_dir}/")
         shutil.move(source_path, dest_path)
 
-    print(f"Moved {len(files_to_move)} file(s).") 
+    print(f"Moved {len(files_to_move)} zip file(s).") 
     extract_zip_files(temp_dir)
 
 def extract_zip_files(temp_dir):
@@ -59,10 +64,9 @@ def extract_zip_files(temp_dir):
         if filename.endswith(".zip"):
             source_path = os.path.join(temp_dir, filename)
             extract_dir = os.path.join(temp_dir, filename[:-4])
-            print(f"Extracting {filename} to {extract_dir}")
             shutil.unpack_archive(source_path, extract_dir)
 
-    print(f"Extracted {len(os.listdir(temp_dir))} file(s).")	
+    print(f"Extracted zip files.")	
     rm_zip_files(temp_dir)
 
 def rm_zip_files(temp_dir):
@@ -72,43 +76,56 @@ def rm_zip_files(temp_dir):
 	for filename in os.listdir(temp_dir):
 		if filename.endswith(".zip"):
 			source_path = os.path.join(temp_dir, filename)
-			print(f"Removing {filename}")
 			os.remove(source_path)
 
-	print(f"Removed {len(os.listdir(temp_dir))} file(s).")	
+	print(f"Removed zip files.")	
 	clean_txt_files(temp_dir)
+	delete_old_files(temp_dir)
 
 def clean_txt_files(temp_dir):
 	"""
-	deletes lines in .txt files in each folder older than 2 months of the current month, date format [7/3/25, 5:46:42 PM]
+	deletes lines in .txt files in each folder older than DAYS_AGO, date format [7/3/25, 5:46:42 PM]
 	"""
 	for txt_path in Path(temp_dir).rglob('*.txt'):
 		temp_file = txt_path.with_suffix('.tmp')
-		removed_count = 0
 		
 		try:
 			with txt_path.open('r', encoding='utf-8') as infile, temp_file.open('w', encoding='utf-8') as outfile:
 				for line in infile:
-					if is_date_more_than_time_ago(get_date_from_msg(line)):
-						removed_count += 1
-					else:
+					if not is_date_more_than_time_ago(get_date_from_string(line, RE_DATE_MSG)):
 						outfile.write(line)
-			
 			os.replace(str(temp_file), str(txt_path))
-			print(f"Cleaned {txt_path.name}: removed {removed_count} lines")
 		except Exception as e:
 			print(f"Error cleaning {txt_path.name}: {e}")
 			if temp_file.exists():
 				temp_file.unlink()
+	print(f"Cleaned txt files.")
 
+def delete_old_files(temp_dir):
+	"""
+	deletes files older than DAYS_AGO in the temp directory
+	"""
+	for file_path in Path(temp_dir).rglob('*'):
+		if file_path.is_file():
+			date_str = get_date_from_string(file_path.name, RE_DATE_FILE_NAME)
+			if is_date_more_than_time_ago(date_str):
+				file_path.unlink()
+	print(f"Deleted old files.")
 
 def is_date_more_than_time_ago(date_str):
 	if not date_str:
 		return False
-	return datetime.strptime(date_str, "%m/%d/%y") < ONE_MONTH_AGO
+	# Handle different date formats
+	if '/' in date_str:
+		# Format: MM/DD/YY
+		return datetime.strptime(date_str, "%m/%d/%y") < TIME_AGO
+	elif '-' in date_str and len(date_str) == 10:
+		# Format: YYYY-MM-DD
+		return datetime.strptime(date_str, "%Y-%m-%d") < TIME_AGO
+	return False
 
-def get_date_from_msg(msg):
-	match = re.search(r'\[(\d{1,2}/\d{1,2}/\d{2,4})', msg)
+def get_date_from_string(str_info, regex):
+	match = re.search(regex, str_info)
 	if match:
 		return match.group(1)
 	return None
@@ -125,4 +142,10 @@ if __name__ == "__main__":
 			sys.exit(1)
 
 	gather_zip_files_temp(zip_dir)
-	#clean_files("/Users/sebastian/Downloads/temp_folder/")
+
+
+"""
+ PENDING IMPROVEMENTS
+ - Add cases to delete messages, for example when messages are more than 2 rows the last one is not deleted
+ because it does not have the date.
+"""
