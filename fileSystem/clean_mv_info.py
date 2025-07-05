@@ -30,6 +30,8 @@ TIME_AGO = datetime.now() - timedelta(days=DAYS_AGO)
 RE_DATE_MSG = r'\[(\d{1,2}/\d{1,2}/\d{2,4})'
 RE_DATE_FILE_NAME = r'(\d{4}-\d{2}-\d{2})'
 DEFAULT_ZIP_DIR = "/Users/sebastian/Downloads"
+DEFAULT_DEST_DIR = "/Users/sebastian/dev/learning/dc-account/client-management"
+CURRENT_MONTH_NAME = datetime.now().strftime("%B")
 
 def gather_zip_files_temp(zip_dir, temp_dir):
     """
@@ -129,27 +131,43 @@ def create_temp_dir(zip_dir):
 	os.makedirs(temp_dir, exist_ok=True)
 	return temp_dir
 
-def execute_process(zip_dir):
+def create_destination_dir(dest_dir):
+	if not os.path.isdir(dest_dir):
+		print(f"Creating destination folder at: {dest_dir}")
+		os.makedirs(dest_dir, exist_ok=True)
+
+def move_folders(temp_dir, dest_dir):
+	for folder in os.listdir(temp_dir):
+		source_path = os.path.join(temp_dir, folder)
+		dest_path = os.path.join(dest_dir, folder)
+		shutil.move(source_path, dest_path)
+	print(f"Moved folders to {dest_dir}")
+
+def execute_process(zip_dir, dest_dir):
 	temp_dir = create_temp_dir(zip_dir)
 	gather_zip_files_temp(zip_dir, temp_dir)
 	extract_zip_files(temp_dir)	
 	rm_zip_files(temp_dir)
 	clean_txt_files(temp_dir)
 	delete_old_files(temp_dir)
-
+	create_destination_dir(dest_dir)
+	move_folders(temp_dir, dest_dir)
+	os.rmdir(temp_dir)
 
 # main
 if __name__ == "__main__":
 	if len(sys.argv) > 1:
 			zip_dir = sys.argv[1]
+			#dest_dir = sys.argv[2]
 	else:
 			zip_dir = DEFAULT_ZIP_DIR
+			dest_dir = os.path.join(DEFAULT_DEST_DIR, CURRENT_MONTH_NAME)
 	
 	if not os.path.isdir(zip_dir):
 			print(f"Error: Directory not found at {zip_dir}")
 			sys.exit(1)
 
-	execute_process(zip_dir)
+	execute_process(zip_dir, dest_dir)
 
 
 """
