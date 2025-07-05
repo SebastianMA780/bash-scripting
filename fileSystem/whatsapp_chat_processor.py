@@ -2,7 +2,7 @@
 
 """
 Note: 
-- this file needs execution permissions (chmod u+x clean_mv_info.py)
+- this file needs execution permissions (chmod u+x whatsapp_chat_processor.py)
 
 Description:
 1. gather all files .zip from a given directory in a temp folder.
@@ -13,7 +13,7 @@ Description:
 6. remove the temp folder.
 
 Usage:
-python clean_mv_info.py [/path/to/zip/files]
+python whatsapp_chat_processor.py
 """
 
 import os
