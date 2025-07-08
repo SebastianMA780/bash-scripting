@@ -11,8 +11,10 @@ from pathlib import Path
 
 DEFAULT_MODEL = "base"
 DEFAULT_DIR_PATH = "/Users/sebastian/dev/learning/dc-account/client-management/july"
+DEFAULT_NAME_STR = "WhatsApp Chat"
+DEFAULT_AUDIO_EXT = "opus"
 
-def transcribir_audio(audio_file, model):
+def translate_audio(audio_file, model):
     """
     Translate an audio file to text using the Whisper model.
     """
@@ -30,7 +32,7 @@ def transcribir_audio(audio_file, model):
 
 def process_directory(directory, model):
     """
-    Process a directory containing .opus audio files and transcribe them to text.
+    Process a directory containing audio files and transcribe them to text.
     """
     dir_path = Path(directory)
     
@@ -38,14 +40,14 @@ def process_directory(directory, model):
         print(f"The directory {directory} does not exist.")
         return
     
-    audio_files = list(dir_path.glob("*.opus"))
+    audio_files = list(dir_path.glob("*." + DEFAULT_AUDIO_EXT))
     
     if not audio_files:
         print(f"No audio files found in {directory}.")
         return
     
     for file in audio_files:
-        translation = transcribir_audio(str(file), model)
+        translation = translate_audio(str(file), model)
         
         if translation:
             archivo_txt = file.with_suffix('.txt')
@@ -67,7 +69,7 @@ def process_directories(dir_path, model):
         print(f"The directory {dir_path} does not exist.")
         return
     
-    chats = [d for d in base_dir.iterdir() if d.is_dir() and d.name.startswith("WhatsApp Chat")]
+    chats = [d for d in base_dir.iterdir() if d.is_dir() and d.name.startswith(DEFAULT_NAME_STR)]
     
     print(f"Found {len(chats)} chats directories.")
     
