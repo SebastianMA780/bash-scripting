@@ -54,11 +54,19 @@ def process_directory(directory, model):
             with open(archivo_txt, 'w', encoding='utf-8') as f:
                 f.write(translation)
             
-            print(f"Transcription saved to {archivo_txt}")
+            print(f"Transcription saved to {archivo_txt}")	
+            
+            delete_translated_file(file)
         else:
             print(f"Error processing file {file}. No transcription was saved.")
-            
 
+def delete_translated_file(file_to_delete):
+		try:
+				file_to_delete.unlink()
+				print(f"Audio file {file_to_delete} deleted successfully")
+		except Exception as e:
+				print(f"Error deleting audio file {file_to_delete}: {e}")
+    
 def process_directories(dir_path, model):
     """
     Process all directories containing audios.
@@ -86,3 +94,4 @@ if __name__ == "__main__":
         model = sys.argv[2] if len(sys.argv) > 2 else DEFAULT_MODEL 
         
     process_directories(target_dir, model)
+    
