@@ -25,7 +25,7 @@ from pathlib import Path
 
 CHAT_FILES_KEYWORDS = ["WhatsApp", "Chat"]
 TEMP_FOLDER_NAME = "temp_folder"
-DAYS_AGO = 45
+DAYS_AGO = 20
 TIME_AGO = datetime.now() - timedelta(days=DAYS_AGO)
 RE_DATE_MSG = r'\[(\d{1,2}/\d{1,2}/\d{2,4})'
 RE_DATE_FILE_NAME = r'(\d{4}-\d{2}-\d{2})'
@@ -158,7 +158,8 @@ def execute_process(zip_dir, dest_dir):
 if __name__ == "__main__":
 	if len(sys.argv) > 1:
 			zip_dir = sys.argv[1]
-			#dest_dir = sys.argv[2]
+			if len(sys.argv) > 2:
+				dest_dir = sys.argv[2]
 	else:
 			zip_dir = DEFAULT_ZIP_DIR
 			dest_dir = os.path.join(DEFAULT_DEST_DIR, CURRENT_MONTH_NAME)
