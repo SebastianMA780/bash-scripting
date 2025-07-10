@@ -22,6 +22,8 @@ import sys
 import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
+sys.path.append('/Users/sebastian/dev/learning/bash-scripting')
+from fetch_data.get_csv_data import load_csv_data
 
 CHAT_FILES_KEYWORDS = ["WhatsApp", "Chat"]
 TEMP_FOLDER_NAME = "temp_folder"
@@ -32,6 +34,9 @@ RE_DATE_FILE_NAME = r'(\d{4}-\d{2}-\d{2})'
 DEFAULT_ZIP_DIR = "/Users/sebastian/Downloads"
 DEFAULT_DEST_DIR = "/Users/sebastian/dev/learning/dc-account/client-management"
 CURRENT_MONTH_NAME = datetime.now().strftime("%B")
+CSV_DATA_PATH = "/Users/sebastian/dev/learning/dc-account/info/Balance - Log Chats.csv"
+# Global variable to cache CSV data
+_csv_data = None
 
 def gather_zip_files_temp(zip_dir, temp_dir):
     """
@@ -83,9 +88,16 @@ def clean_txt_files(temp_dir):
 	"""
 	for txt_path in Path(temp_dir).rglob('*.txt'):
 		temp_file = txt_path.with_suffix('.tmp')
-		
+		chat_folder_name = extract_contact_name(txt_path.parent.name)
+		exists, next_value = check_chat_exists_in_csv(chat_folder_name)
+				
 		try:
 			with txt_path.open('r', encoding='utf-8') as infile, temp_file.open('w', encoding='utf-8') as outfile:
+				if exists and next_value:
+					outfile.write(meta_format_data_txt_files(next_value))
+				else:
+					outfile.write(meta_format_data_txt_files(None))
+
 				for line in infile:
 					if not is_date_more_than_time_ago(get_date_from_string(line, RE_DATE_MSG)):
 						outfile.write(line)
@@ -95,6 +107,22 @@ def clean_txt_files(temp_dir):
 			if temp_file.exists():
 				temp_file.unlink()
 	print(f"Cleaned txt files.")
+
+def meta_format_data_txt_files(date_value):
+	if date_value is None:
+		return "Not process yet. \n\n"
+	return f"Process until {date_value}.\n\n"
+	
+def extract_contact_name(folder_name):
+    """
+    Extract contact name from WhatsApp chat folder name.
+    """
+    if " - " in folder_name:
+        contact_part = folder_name.split(" - ", 1)[1]
+        if contact_part.startswith("+"):
+            return contact_part[1:]
+        return contact_part
+    return folder_name
 
 def delete_old_files(temp_dir):
 	"""
@@ -124,6 +152,38 @@ def get_date_from_string(str_info, regex):
 	if match:
 		return match.group(1)
 	return None
+
+def load_csv_data_once(csv_path=CSV_DATA_PATH):
+	"""Load CSV data only once and cache it."""
+	global _csv_data
+	if _csv_data is None:
+		_csv_data = load_csv_data(csv_path)
+	return _csv_data
+
+def check_chat_exists_in_csv(chat_name, csv_path=CSV_DATA_PATH):
+	"""
+	Check if a chat name exists in the CSV data and return the next column value.
+	
+	Returns:
+		tuple: (exists: bool, next_column_value: str or None)
+	"""
+	try:
+		df = load_csv_data_once(csv_path)
+		if df is not None:
+			for i, column in enumerate(df.columns):
+				mask = df[column].astype(str).str.contains(chat_name, case=False, na=False)
+				if mask.any():
+					row_idx = df[mask].index[0]
+					next_value = None
+					if i + 1 < len(df.columns):
+						next_column = df.columns[i + 1]
+						next_value = df.loc[row_idx, next_column]
+					return True, next_value
+			return False, None
+		return False, None
+	except Exception as e:
+		print(f"Error checking chat in CSV: {e}")
+		return False, None
 
 def create_temp_dir(zip_dir):
 	temp_dir = os.path.join(zip_dir, TEMP_FOLDER_NAME)
