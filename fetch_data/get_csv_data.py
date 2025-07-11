@@ -5,9 +5,6 @@ def load_csv_data(file_path):
     """
     Load CSV data efficiently using pandas DataFrame.
     
-    Args:
-        file_path (str): Path to the CSV file
-        
     Returns:
         pandas.DataFrame: The loaded data
     """
@@ -26,25 +23,6 @@ def load_csv_data(file_path):
         print(f"Error loading CSV: {e}")
         return None
 
-def get_data_info(df):
-    if df is not None:
-        print(f"Shape: {df.shape}")
-        print(f"Columns: {list(df.columns)}")
-        print(f"Data types:\n{df.dtypes}")
-        return df.info()
-
-# Example usage
 if __name__ == "__main__":
-    # Example file path
-    csv_file = "/Users/sebastian/dev/learning/dc-account/info/Balance - Log Chats.csv"
+    pass
     
-    # Load the data
-    data = load_csv_data(csv_file)
-    
-    if data is not None:
-        # Display basic info
-        get_data_info(data)
-        
-        # Show first few rows
-        print("\nFirst 5 rows:")
-        print(data.head())

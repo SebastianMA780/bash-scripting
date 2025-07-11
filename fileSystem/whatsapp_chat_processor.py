@@ -110,8 +110,8 @@ def clean_txt_files(temp_dir):
 
 def meta_format_data_txt_files(date_value):
 	if date_value is None:
-		return "Not process yet. \n\n"
-	return f"Process until {date_value}.\n\n"
+		return "NOT_PROCESSED. \n\n"
+	return f"PROCESS_UNTIL {date_value}.\n\n"
 	
 def extract_contact_name(folder_name):
     """
@@ -129,10 +129,23 @@ def delete_old_files(temp_dir):
 	deletes files older than DAYS_AGO in the temp directory
 	"""
 	for file_path in Path(temp_dir).rglob('*'):
+		chat_folder_name = extract_contact_name(file_path.parent.name)
+		exists, next_value = check_chat_exists_in_csv(chat_folder_name)
+
 		if file_path.is_file():
 			date_str = get_date_from_string(file_path.name, RE_DATE_FILE_NAME)
+			
 			if is_date_more_than_time_ago(date_str):
 				file_path.unlink()
+			else:
+				if exists and next_value:
+					if date_str and is_date_lower_than_csv_value(date_str, next_value):
+						new_name = f"PROCESSED_{file_path.name}"
+						new_path = file_path.parent / new_name
+						file_path.rename(new_path)
+		
+
+
 	print(f"Deleted old files.")
 
 def is_date_more_than_time_ago(date_str):
@@ -146,6 +159,17 @@ def is_date_more_than_time_ago(date_str):
 		# Format: YYYY-MM-DD
 		return datetime.strptime(date_str, "%Y-%m-%d") < TIME_AGO
 	return False
+
+def is_date_lower_than_csv_value(date_str, csv_date_str):
+	"""Compare if file date is lower than CSV date value."""
+	try:
+		file_date = datetime.strptime(date_str, "%Y-%m-%d")
+		csv_date = datetime.strptime(str(csv_date_str), "%Y-%m-%d")
+		
+		return file_date < csv_date
+	except Exception as e:
+		print(f"Error comparing dates: {e}")
+		return False
 
 def get_date_from_string(str_info, regex):
 	match = re.search(regex, str_info)
