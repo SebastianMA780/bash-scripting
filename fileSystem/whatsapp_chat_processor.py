@@ -7,8 +7,9 @@ Note:
 Description:
 1. gather all files .zip from a given directory in a temp folder.
 2. extract all files from the .zip files.
-3. clean the files text removing lines older than DAYS_AGO.
-4. remove files older than DAYS_AGO.
+3. clean the files text removing lines older than DAYS_AGO and adding processed metadata.
+4. remove files older than DAYS_AGO, and files with extensions other than .txt and .opus.
+	 If the file exists in the CSV data, it will be renamed with a "PROCESSED_" prefix.
 5. move the folders with the clean files to the destination directory.
 6. remove the temp folder.
 
@@ -124,9 +125,11 @@ def extract_contact_name(folder_name):
         return contact_part
     return folder_name
 
-def delete_old_files(temp_dir):
+def clean_chat_files(temp_dir):
 	"""
-	deletes files older than DAYS_AGO in the temp directory
+	Cleans chat files in the temporary directory by removing files older than DAYS_AGO,
+	ADDING a prefix "PROCESSED_" to the file name if it exists in the CSV data.
+	Also removes files with extensions other than .txt and .opus.
 	"""
 	for file_path in Path(temp_dir).rglob('*'):
 		chat_folder_name = extract_contact_name(file_path.parent.name)
@@ -134,8 +137,8 @@ def delete_old_files(temp_dir):
 
 		if file_path.is_file():
 			date_str = get_date_from_string(file_path.name, RE_DATE_FILE_NAME)
-			
-			if is_date_more_than_time_ago(date_str):
+
+			if is_date_more_than_time_ago(date_str) or file_path.suffix not in ['.txt', '.opus']:
 				file_path.unlink()
 			else:
 				if exists and next_value:
@@ -144,10 +147,6 @@ def delete_old_files(temp_dir):
 						new_path = file_path.parent / new_name
 						file_path.rename(new_path)
 		
-
-
-	print(f"Deleted old files.")
-
 def is_date_more_than_time_ago(date_str):
 	if not date_str:
 		return False
@@ -233,7 +232,7 @@ def execute_process(zip_dir, dest_dir):
 	extract_zip_files(temp_dir)	
 	rm_zip_files(temp_dir)
 	clean_txt_files(temp_dir)
-	delete_old_files(temp_dir)
+	clean_chat_files(temp_dir)
 	create_destination_dir(dest_dir)
 	move_folders(temp_dir, dest_dir)
 	os.rmdir(temp_dir)
