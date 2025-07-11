@@ -39,6 +39,8 @@ CSV_DATA_PATH = "/Users/sebastian/dev/learning/dc-account/info/Balance - Log Cha
 # Global variable to cache CSV data
 _csv_data = None
 
+### MAIN FUNCTIONS ###
+
 def gather_zip_files_temp(zip_dir, temp_dir):
     """
     Moves all .zip files containing keywords from a source directory to a temporary folder inside the source directory.
@@ -109,22 +111,6 @@ def clean_txt_files(temp_dir):
 				temp_file.unlink()
 	print(f"Cleaned txt files.")
 
-def meta_format_data_txt_files(date_value):
-	if date_value is None:
-		return "NOT_PROCESSED. \n\n"
-	return f"PROCESS_UNTIL {date_value}.\n\n"
-	
-def extract_contact_name(folder_name):
-    """
-    Extract contact name from WhatsApp chat folder name.
-    """
-    if " - " in folder_name:
-        contact_part = folder_name.split(" - ", 1)[1]
-        if contact_part.startswith("+"):
-            return contact_part[1:]
-        return contact_part
-    return folder_name
-
 def clean_chat_files(temp_dir):
 	"""
 	Cleans chat files in the temporary directory by removing files older than DAYS_AGO,
@@ -143,10 +129,41 @@ def clean_chat_files(temp_dir):
 			else:
 				if exists and next_value:
 					if date_str and is_date_lower_than_csv_value(date_str, next_value):
-						new_name = f"PROCESSED_{file_path.name}"
-						new_path = file_path.parent / new_name
-						file_path.rename(new_path)
-		
+						rename_files(file_path, prefix="PROCESSED")
+				else:
+						rename_files(file_path, prefix="NOT_PROCESSED")
+						
+def create_destination_dir(dest_dir):
+	if not os.path.isdir(dest_dir):
+		print(f"Creating destination folder at: {dest_dir}")
+		os.makedirs(dest_dir, exist_ok=True)
+
+def move_folders(temp_dir, dest_dir):
+	for folder in os.listdir(temp_dir):
+		source_path = os.path.join(temp_dir, folder)
+		dest_path = os.path.join(dest_dir, folder)
+		shutil.move(source_path, dest_path)
+	print(f"Moved folders to {dest_dir}")
+
+
+### HELPER FUNCTIONS ###
+
+def meta_format_data_txt_files(date_value):
+	if date_value is None:
+		return "NOT_PROCESSED. \n\n"
+	return f"PROCESS_UNTIL {date_value}.\n\n"
+	
+def extract_contact_name(folder_name):
+    """
+    Extract contact name from WhatsApp chat folder name.
+    """
+    if " - " in folder_name:
+        contact_part = folder_name.split(" - ", 1)[1]
+        if contact_part.startswith("+"):
+            return contact_part[1:]
+        return contact_part
+    return folder_name
+
 def is_date_more_than_time_ago(date_str):
 	if not date_str:
 		return False
@@ -165,7 +182,7 @@ def is_date_lower_than_csv_value(date_str, csv_date_str):
 		file_date = datetime.strptime(date_str, "%Y-%m-%d")
 		csv_date = datetime.strptime(str(csv_date_str), "%Y-%m-%d")
 		
-		return file_date < csv_date
+		return file_date <= csv_date
 	except Exception as e:
 		print(f"Error comparing dates: {e}")
 		return False
@@ -214,18 +231,12 @@ def create_temp_dir(zip_dir):
 	os.makedirs(temp_dir, exist_ok=True)
 	return temp_dir
 
-def create_destination_dir(dest_dir):
-	if not os.path.isdir(dest_dir):
-		print(f"Creating destination folder at: {dest_dir}")
-		os.makedirs(dest_dir, exist_ok=True)
+def rename_files(file_path, prefix=""):
+	new_name = f"{prefix}_{file_path.name}"
+	new_path = file_path.parent / new_name
+	file_path.rename(new_path)
 
-def move_folders(temp_dir, dest_dir):
-	for folder in os.listdir(temp_dir):
-		source_path = os.path.join(temp_dir, folder)
-		dest_path = os.path.join(dest_dir, folder)
-		shutil.move(source_path, dest_path)
-	print(f"Moved folders to {dest_dir}")
-
+### EXECUTION FUNCTION ###
 def execute_process(zip_dir, dest_dir):
 	temp_dir = create_temp_dir(zip_dir)
 	gather_zip_files_temp(zip_dir, temp_dir)

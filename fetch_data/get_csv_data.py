@@ -16,7 +16,6 @@ def load_csv_data(file_path):
         
         df = pd.read_csv(csv_path)
         
-        print(f"Successfully loaded {len(df)} rows and {len(df.columns)} columns")
         return df
         
     except Exception as e:
